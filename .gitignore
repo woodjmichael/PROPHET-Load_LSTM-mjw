@@ -1,0 +1,14 @@
+/.project
+/.pydevproject
+/.idea/
+/.env
+/build/
+/results/
+/dist/
+/.vagrant/
+*.pyc
+*.pyd
+/*.egg-info/
+/*.lp
+/*.log
+/log.txt
