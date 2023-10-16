@@ -28,7 +28,7 @@ if not MICROGRID_PC:
 # LOGGER = daiquiri.getLogger(__name__)
 
 
-def main(argv=None):
+def main(argv=None,t_now=None,plots=True):
     # read configuration file
     args = util.parse_arguments(argv)
 
@@ -109,7 +109,8 @@ def main(argv=None):
     ## definizione tempi inizio
     #ToDo: attenzione, i dati sono diversi dall'ev in termini di freq e risoluzione temporale
 
-    t_now = datetime.utcnow()
+    if t_now is None:
+        t_now = datetime.utcnow()
 
     inizio_ts = pd.to_datetime(t_now).tz_localize('UTC')-timedelta(hours=(data_opt['n_back']/4+0.25))  # 7 per aggiustare ora LA, modificare
     fine_ts = pd.to_datetime(t_now).tz_localize('UTC')
@@ -169,13 +170,24 @@ def main(argv=None):
         
         print(forecast_df)
         forecast_df.to_csv(data_opt['data_path']/Path('forecast_df.csv'))
+    
         
         t_begin = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') - timedelta(days=7)
         t_end = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') + timedelta(days=3)
         idx = pd.date_range(t_begin,t_end,freq='15min')
         
-        pd.concat((df.loc[idx,'power'],forecast_df), axis=1).plot()
-        plt.show()
+        df = pd.concat((df.loc[idx,'power'],forecast_df), axis=1)
+        
+        rmse_persist = ((df.power - df.persist).dropna()**2).mean()**.5
+        rmse_lstm =    ((df.power - df.predicted_activepower_ev_1).dropna()**2).mean()**.5
+        skill = 1 - rmse_lstm/rmse_persist        
+        
+        if plots:
+            df.plot(title=f'Skill = {100*skill:.1f}%')
+            plt.show()
+        
+
+        return rmse_persist, rmse_lstm, skill
 
 
 if __name__ == "__main__":
