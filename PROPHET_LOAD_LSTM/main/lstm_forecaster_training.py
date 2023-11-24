@@ -90,7 +90,8 @@ def main(argv=None):
     
     df = pd.read_csv(data_opt['data_train_path'],
                      index_col=0,
-                     parse_dates=True)
+                     parse_dates=True,
+                     comment='#')
     df.index = df.index.tz_localize('UTC')
 
     df['year'] = df.index.year
