@@ -15,10 +15,9 @@ def multi_test(t = datetime(2023,10,1,0,15,0)):
 ini_path = "/home/mjw/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
 #ini_path = "C:/Users/Admin/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
 
-lstm_forecaster_training.main([ini_path])
+#lstm_forecaster_training.main([ini_path])
 #lstm_forecaster_training.grid_search([ini_path])
 
-#lstm_forecaster.main([ini_path],datetime(2019,12,17,0,1,0))
+lstm_forecaster.main([ini_path],datetime(2019,12,29,0,1,0))
 
 #multi_test()
-
