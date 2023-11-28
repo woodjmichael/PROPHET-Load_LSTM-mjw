@@ -5,6 +5,7 @@
 /build/
 /results/
 /dist/
+/models/
 /.vagrant/
 *.pyc
 *.pyd
