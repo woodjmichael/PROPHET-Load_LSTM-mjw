@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from pickle import load
 from tensorflow import keras
 
-
 from PROPHET_LOAD_LSTM.util import util
 from PROPHET_LOAD_LSTM.util.data_util import prepare_data_test
 from PROPHET_LOAD_LSTM.util.model_util import attention
@@ -43,6 +42,7 @@ def main(argv=None,t_now=None,plots=True):
         'freq': config.getint("data_opt", "freq"),
         'tr_days_step': config.getint("data_opt", "tr_days_step"),
         'data_path': Path(config.get("data_opt", "data_path")),
+        'out_dir': Path(config.get("data_opt", "out_dir")),
         'data_test_path':Path(config.get("data_opt", "data_path")) / Path(config.get('data_opt', 'test_csv')),
     }
     if data_opt['features'] == ['']:
@@ -112,6 +112,8 @@ def main(argv=None,t_now=None,plots=True):
 
     if t_now is None:
         t_now = datetime.utcnow()
+    else:
+        t_now += timedelta(seconds=1) # failure if h,m,s are all 0
 
     inizio_ts = pd.to_datetime(t_now).tz_localize('UTC')-timedelta(hours=(data_opt['n_back']/4+0.25))  # 7 per aggiustare ora LA, modificare
     fine_ts = pd.to_datetime(t_now).tz_localize('UTC')
@@ -167,28 +169,28 @@ def main(argv=None,t_now=None,plots=True):
         #talktoSQL.write(forecast_df, 'db_lstm_prediction_test')
     else:
         forecast_df.index = forecast_df['timestamp_utc']
-        forecast_df.drop(columns=['timestamp_utc','timestamp_forecast_update'], inplace=True)
+        forecast_df.drop(columns=['timestamp_utc'], inplace=True)
         
         print(forecast_df)
-        forecast_df.to_csv(data_opt['data_path']/Path('forecast_df.csv'))
+        forecast_df.to_csv(data_opt['out_dir']/Path('forecast_df.csv'))
     
+        t_begin = pd.to_datetime(t_now).floor('15min').tz_localize('UTC')# - timedelta(days=7)
+        #t_end = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') + timedelta(days=3)
+        idx = pd.date_range(t_begin,periods=data_opt['n_timesteps'],freq='15min')
         
-        t_begin = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') - timedelta(days=7)
-        t_end = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') + timedelta(days=3)
-        idx = pd.date_range(t_begin,t_end,freq='15min')
+        df = df.loc[idx][data_opt['out_col']]
         
-        df = pd.concat((df.loc[idx,'power'],forecast_df), axis=1)
-        
-        rmse_persist = ((df.power - df.persist).dropna()**2).mean()**.5
-        rmse_lstm =    ((df.power - df.predicted_activepower_ev_1).dropna()**2).mean()**.5
-        skill = 1 - rmse_lstm/rmse_persist        
+        mae_persist = (df.power - forecast_df.persist).dropna().abs().mean()
+        mae_lstm =    (df.power - forecast_df.predicted_activepower_ev_1).dropna().abs().mean()
+        skill = 1 - mae_lstm/mae_persist
         
         if plots:
-            df.plot(title=f'Skill = {100*skill:.1f}%')
+            forecast_df.drop(columns=['timestamp_forecast_update']).plot()
             plt.show()
-        
+            
+        forecast_df.timestamp_forecast_update = t_begin.tz_convert(None)
 
-        return rmse_persist, rmse_lstm, skill
+        return mae_persist, mae_lstm, skill, forecast_df
 
 
 if __name__ == "__main__":
