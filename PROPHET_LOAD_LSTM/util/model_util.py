@@ -13,6 +13,17 @@ from tensorflow.keras.layers import Layer
 # from keras import optimizers
 # from keras_tuner import RandomSearch, BayesianOptimization 
 
+class Custom_Loss_Prices(tf.keras.losses.Loss):
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        self.prices = 7*[1]+5*[5]+12*[1] # 24 hourly "prices" [.1,.1,.1,.1... .3,.3,.3,.3,... 1,1,1] / 20
+        self.prices = [self.prices[i//4] for i in range(4*len(self.prices))] # 96 hourly prices
+        self.prices_tf = tf.constant(self.prices,dtype=tf.float32)
+    def call(self, y_true, y_pred):        
+        elements = tf.multiply(x=self.prices_tf, y=tf.abs(y_true - y_pred))
+        #elements = y_true - y_pred
+        return tf.reduce_mean(tf.square(elements)) 
+
 
 class attention(Layer):
     def _init_(self, **kwargs):
@@ -50,7 +61,9 @@ def create_model_attention(model_opt, train_X, train_y):
                    return_sequences=True)(decoder, initial_state=[encoder_last_h, encoder_last_c])
     outputs = TimeDistributed(Dense(output_train.shape[2]))(decoder)     #Dense(dense_units, trainable=True, activation=activation)(decoder)
     model = Model(inputs=input_train, outputs=outputs)
-    model.compile(loss=model_opt["metrics"], optimizer=model_opt["optimizer"])
+    model.compile(#loss=model_opt["metrics"],
+                  loss=Custom_Loss_Prices(),
+                  optimizer=model_opt["optimizer"])
 
     # Create early stopping function
     erlstp_callback = callbacks.EarlyStopping(monitor="val_loss",  # loss o val_loss

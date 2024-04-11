@@ -7,16 +7,19 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pickle import load
 from tensorflow import keras
+import tensorflow as tf
 
 from PROPHET_LOAD_LSTM.util import util
 from PROPHET_LOAD_LSTM.util.data_util import prepare_data_test
-from PROPHET_LOAD_LSTM.util.model_util import attention
+from PROPHET_LOAD_LSTM.util.model_util import attention, Custom_Loss_Prices
 
 if MICROGRID_PC:
     from PROPHET_DB import mysql
 if not MICROGRID_PC:
     import matplotlib.pyplot as plt
     pd.options.plotting.backend='matplotlib'
+
+   
 
 # import daiquiri
 # import sklearn.preprocessing
@@ -126,7 +129,10 @@ def main(argv=None,t_now=None,plots=True):
 
     test_X, test_y= prepare_data_test(test, scaler_X, data_opt)
     #test_y = test_y.reshape((test_y.shape[0], test_y.shape[1], 1))
-    model = keras.models.load_model(model_opt["model_path"] / Path('model.h5'), custom_objects={"attention": attention})
+    model = keras.models.load_model(model_opt["model_path"] / Path('model.h5'),
+                                    custom_objects={"attention": attention,
+                                                    'Custom_Loss_Prices':Custom_Loss_Prices,
+                                                    })
     y_hat_sc = model.predict(test_X)
 
     y_hat_sc = y_hat_sc[:, :, 0]#.reshape((test_X.shape[0], test_X.shape[1]))
@@ -185,7 +191,7 @@ def main(argv=None,t_now=None,plots=True):
         skill = 1 - mae_lstm/mae_persist
         
         if plots:
-            forecast_df.drop(columns=['timestamp_forecast_update']).plot()
+            pd.concat((forecast_df.drop(columns=['timestamp_forecast_update']),df),axis=1).plot()
             plt.show()
             
         forecast_df.timestamp_forecast_update = t_begin.tz_convert(None)

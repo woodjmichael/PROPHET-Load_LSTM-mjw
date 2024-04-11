@@ -15,8 +15,5 @@ pip install "tensorflow<2.11"
 python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
 
 # install the rest
-pip install pandas
-pip install daiquiri
-pip install scikit-learn
-pip install matplotlib
+pip install pandas daiquiri scikit-learn matplotlib
 ```

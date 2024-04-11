@@ -5,15 +5,26 @@ import pandas as pd
 from PROPHET_LOAD_LSTM.main import lstm_forecaster_training, lstm_forecaster
 
 #ini_path = "/home/mjw/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
-ini_path = "C:/Users/Admin/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
+ini_path = r"C:/Users/woodj/OneDrive - Politecnico di Milano/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
 
-#lstm_forecaster_training.main([ini_path])
-#mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2020,1,1,0,0),plots=False)
+
+#
+# Train
+#
+
+lstm_forecaster_training.main([ini_path])
+
+#
+# Predict
+#
+
+#mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2019,3,18,0,0),plots=True)
+#mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2018,10,16,0,0),plots=True)
 
 #
 # Random search
 #
-search_space = []
+"""search_space = []
 results = pd.DataFrame({'units':[],'n_back':[],'n_dense':[],'dropout':[],'vloss':[]})
 for units in [24*x for x in [1,2,3,4,5,8,10,12,14,16,18,20]]:
     for n_back in [24*x for x in [1,2,3,4,5,8,10,12,14,16,18,20]]:
@@ -24,19 +35,18 @@ shuffle(search_space)
 for u,nb,nd,d in search_space:
     print(f'\n\n\n ///// units={u} n_back={nb} n_dense={nd} dropout={d}/////\n')
     try:
-        vloss = lstm_forecaster_training.main([ini_path],u,nb,nd,d)
+        vloss = lstm_forecaster_training.main([ini_path],u,nb,nd,d)M
     except:
         print('//////////////////// FAIL /////////////////////')
         vloss=pd.NA
     results.loc[len(results)] = [u,nb,nd,d,vloss]
-    results.to_csv(ini_path[:-19]+'data/output/random_search.csv')
-
+    results.to_csv(ini_path[:-19]+'data/output/random_search.csv')"""
 #
 # Test
 #
-"""mae = pd.DataFrame({'t':[],'persist':[],'lstm':[],'skill':[]})
+mae = pd.DataFrame({'t':[],'persist':[],'lstm':[],'skill':[]})
 forecasts = pd.DataFrame({'timestamp_forecast_update':[],'predicted_activepower_ev_1':[],'persist':[]})
-for t in pd.date_range(dt(2019,12,5,0,0,0),dt(2020,1,15,0,0),freq='15min'):
+for t in pd.date_range(dt(2018,12,10,0,0,0),periods=168,freq='60min'):
     t=pd.to_datetime(t)
     #_, _, _, forecast = lstm_forecaster.main([ini_path],t,plots=False)
     mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],t,plots=False)
@@ -45,4 +55,4 @@ for t in pd.date_range(dt(2019,12,5,0,0,0),dt(2020,1,15,0,0),freq='15min'):
     forecasts.to_csv(ini_path[:-19]+'data/output/forecasts.csv')
     mae.loc[len(mae)] = [t,mae_persist,mae_lstm,skill]
     mae.to_csv(ini_path[:-19]+'data/output/errors.csv')
-    pass"""
+    pass
