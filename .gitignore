@@ -2,6 +2,7 @@
 /.pydevproject
 /.idea/
 /.env
+/data/img/*
 /build/
 /results/
 /dist/
@@ -13,3 +14,4 @@
 /*.lp
 /*.log
 /log.txt
+/*.csv

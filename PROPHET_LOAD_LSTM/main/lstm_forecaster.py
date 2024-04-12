@@ -19,6 +19,7 @@ if not MICROGRID_PC:
     import matplotlib.pyplot as plt
     pd.options.plotting.backend='matplotlib'
 
+WEEKDAY_LOOKUP={'0':'Mon','1':'Tue','2':'Wed','3':'Thu','4':'Fri','5':'Sat','6':'Sun'}
    
 
 # import daiquiri
@@ -30,7 +31,7 @@ if not MICROGRID_PC:
 # LOGGER = daiquiri.getLogger(__name__)
 
 
-def main(argv=None,t_now=None,plots=True):
+def main(argv=None,t_now=None,plots=True,saveplots=False):
     # read configuration file
     args = util.parse_arguments(argv)
 
@@ -176,9 +177,8 @@ def main(argv=None,t_now=None,plots=True):
     else:
         forecast_df.index = forecast_df['timestamp_utc']
         forecast_df.drop(columns=['timestamp_utc'], inplace=True)
-        
         print(forecast_df)
-        forecast_df.to_csv(data_opt['out_dir']/Path('forecast_df.csv'))
+        #forecast_df.to_csv(data_opt['out_dir']/Path('forecast_df.csv'))
     
         t_begin = pd.to_datetime(t_now).floor('15min').tz_localize('UTC')# - timedelta(days=7)
         #t_end = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') + timedelta(days=3)
@@ -190,9 +190,17 @@ def main(argv=None,t_now=None,plots=True):
         mae_lstm =    (df.power - forecast_df.predicted_activepower_ev_1).dropna().abs().mean()
         skill = 1 - mae_lstm/mae_persist
         
+        forecast_df = pd.concat((forecast_df.drop(columns=['timestamp_forecast_update']),df),axis=1)
+        
         if plots:
-            pd.concat((forecast_df.drop(columns=['timestamp_forecast_update']),df),axis=1).plot()
-            plt.show()
+            weekday = WEEKDAY_LOOKUP[str(forecast_df.index[0].weekday())]
+            title = f'Skill={100*skill:.0f}%, Weekday={weekday}'
+            forecast_df.plot(title=title)
+            if saveplots:
+                datetime = f'{t_now.year}-{t_now.month}-{t_now.day}'
+                plt.savefig(f'img/{datetime}.png')
+            else:
+                plt.show()
             
         forecast_df.timestamp_forecast_update = t_begin.tz_convert(None)
 

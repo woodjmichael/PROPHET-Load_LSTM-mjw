@@ -4,22 +4,20 @@ from random import shuffle
 import pandas as pd
 from PROPHET_LOAD_LSTM.main import lstm_forecaster_training, lstm_forecaster
 
-#ini_path = "/home/mjw/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
-ini_path = r"C:/Users/woodj/OneDrive - Politecnico di Milano/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
-
+ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
+#ini_path = r"C:/Users/woodj/OneDrive - Politecnico di Milano/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
 
 #
 # Train
 #
 
-lstm_forecaster_training.main([ini_path])
+#lstm_forecaster_training.main([ini_path])
 
 #
 # Predict
 #
 
-#mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2019,3,18,0,0),plots=True)
-#mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2018,10,16,0,0),plots=True)
+#mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2019,12,13,0,0),plots=True)
 
 #
 # Random search
@@ -41,18 +39,30 @@ for u,nb,nd,d in search_space:
         vloss=pd.NA
     results.loc[len(results)] = [u,nb,nd,d,vloss]
     results.to_csv(ini_path[:-19]+'data/output/random_search.csv')"""
+    
 #
-# Test
+# Test DAILY UPDATE
 #
 mae = pd.DataFrame({'t':[],'persist':[],'lstm':[],'skill':[]})
 forecasts = pd.DataFrame({'timestamp_forecast_update':[],'predicted_activepower_ev_1':[],'persist':[]})
-for t in pd.date_range(dt(2018,12,10,0,0,0),periods=168,freq='60min'):
+#for t in pd.date_range(dt(2018,10,15),dt(2019,12,1),freq='24h'):
+for t in pd.date_range(dt(2019,12,13),dt(2020,1,16),freq='24h'):
     t=pd.to_datetime(t)
     #_, _, _, forecast = lstm_forecaster.main([ini_path],t,plots=False)
-    mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],t,plots=False)
+    mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],t,plots=True)
     forecast.index = forecast.index.tz_convert(None)
+    
+    forecast = forecast[:96] # only day-ahead
+    
     forecasts = pd.concat([forecasts,forecast],axis=0)
-    forecasts.to_csv(ini_path[:-19]+'data/output/forecasts.csv')
+    forecasts.to_csv(ini_path[:-19]+'forecasts.csv')
     mae.loc[len(mae)] = [t,mae_persist,mae_lstm,skill]
-    mae.to_csv(ini_path[:-19]+'data/output/errors.csv')
-    pass
+    mae.to_csv(ini_path[:-19]+'errors.csv')
+    quit()
+    
+#forecast = forecast[['predicted_activepower_ev1','persist']]
+#forecast.colummns = ['LSTM kW','Persist kW']
+#forecasts.to_csv(ini_path[:-19]+'forecasts.csv')
+
+print('Total skill',1-(mae.lstm.mean()/mae.persist.mean()))
+
