@@ -11,7 +11,7 @@ ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
 # Train
 #
 
-#lstm_forecaster_training.main([ini_path])
+lstm_forecaster_training.main([ini_path])
 
 #
 # Predict
