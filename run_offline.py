@@ -3,9 +3,13 @@ from datetime import timedelta as td
 from random import shuffle
 import pandas as pd
 from PROPHET_LOAD_LSTM.main import lstm_forecaster_training, lstm_forecaster
+from PROPHET_LOAD_LSTM.util import util
 
-ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
-#ini_path = r"C:/Users/woodj/OneDrive - Politecnico di Milano/Code/PROPHET-Load_LSTM/lstm_forecaster.ini"
+#ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
+ini_path = r"C:\Users\Admin\Code\PROPHET-Load_LSTM\lstm_forecaster.ini"
+
+config = util.read_config(ini_path)
+out_dir = config.get("data_opt", "out_dir")
 
 #
 # Train
@@ -41,25 +45,26 @@ for u,nb,nd,d in search_space:
     results.to_csv(ini_path[:-19]+'data/output/random_search.csv')"""
     
 #
-# Test DAILY UPDATE
+# Test
 #
+
 mae = pd.DataFrame({'t':[],'persist':[],'lstm':[],'skill':[]})
 forecasts = pd.DataFrame({'timestamp_forecast_update':[],
                           'predicted_activepower_ev_1':[],
                           'persist':[]})
-#for t in pd.date_range(dt(2018,10,15),dt(2019,12,1),freq='24h'):
-for t in pd.date_range(dt(2019,12,13),dt(2020,1,16),freq='24h'):
-    t=pd.to_datetime(t)
-    #_, _, _, forecast = lstm_forecaster.main([ini_path],t,plots=False)
-    mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],t,plots=False)
-    forecast.index = forecast.index.tz_convert(None)
+
+for t in pd.date_range('2019-9-13','2019-12-28',freq='1h'):
+    mae_persist, mae_lstm, skill, new_forecast = lstm_forecaster.main([ini_path],t,plots=False)
+    new_forecast.index = new_forecast.index.tz_convert(None)
     
-    forecast = forecast[:96] # only day-ahead
-    
-    forecasts = pd.concat([forecasts,forecast],axis=0)
-    forecasts.to_csv(ini_path[:-19]+'forecasts.csv')
+    #forecast = forecast[:96] # only day-ahead
+
+    forecasts = pd.concat([forecasts,new_forecast],axis=0)    
     mae.loc[len(mae)] = [t,mae_persist,mae_lstm,skill]
-    mae.to_csv(ini_path[:-19]+'errors.csv')
+
+forecasts.to_csv(out_dir+'forecasts.csv')
+
+#mae.to_csv(out_dir+'errors.csv')
     
 #forecast = forecast[['predicted_activepower_ev1','persist']]
 #forecast.colummns = ['LSTM kW','Persist kW']
