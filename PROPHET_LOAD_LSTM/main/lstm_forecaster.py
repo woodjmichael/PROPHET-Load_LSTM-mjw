@@ -34,37 +34,8 @@ WEEKDAY_LOOKUP={'0':'Mon','1':'Tue','2':'Wed','3':'Thu','4':'Fri','5':'Sat','6':
 def main(argv=None,t_now=None,plots=True,saveplots=False):
     # read configuration file
     args = util.parse_arguments(argv)
-
     config = util.read_config(args.config)
-    data_opt = {
-        'n_back': config.getint("data_opt", "n_back"),  # 4*24*7
-        'n_timesteps': config.getint("data_opt", "n_timesteps"),  # 4*4
-        'lag': config.getint("data_opt", "lag"),
-        'tr_per': config.getfloat("data_opt", "tr_per"),
-        'out_col': config.get("data_opt", "out_col").split(','),
-        'features': config.get("data_opt", "features").split(','),
-        'freq': config.getint("data_opt", "freq"),
-        'tr_days_step': config.getint("data_opt", "tr_days_step"),
-        'data_path': Path(config.get("data_opt", "data_path")),
-        'out_dir': Path(config.get("data_opt", "out_dir")),
-        'data_test_path':Path(config.get("data_opt", "data_path")) / Path(config.get('data_opt', 'test_csv')),
-    }
-    if data_opt['features'] == ['']:
-        data_opt['columns'] = data_opt['out_col']
-    else:
-        data_opt['columns'] = data_opt['features'] + data_opt['out_col']
-    data_opt['n_features'] = len(data_opt['columns'])
-
-    model_opt = {'Dense_input_dim': config.getint("model_opt", "Dense_input_dim"),
-                 'LSTM_num_hidden_units': list(map(int, config.get("model_opt", "LSTM_num_hidden_units").split(','))),
-                 'LSTM_layers': config.getint("model_opt", "LSTM_layers"),
-                 'metrics': config.get("model_opt", "metrics"), 'optimizer': config.get("model_opt", "optimizer"),
-                 'patience': config.getint("model_opt", "patience"), 'epochs': config.getint("model_opt", "epochs"),
-                 'validation_split': config.getfloat("model_opt", "validation_split"),
-                 'model_path': Path(config.get("model_opt", "model_path")),
-                 'Dropout_rate': config.getfloat("model_opt", "Dropout_rate"),
-                 'input_dim': (data_opt['n_back'], data_opt['n_features']), 'dense_out': data_opt['n_timesteps']
-                 }
+    data_opt, model_opt = util.populate_opts(config)
 
     # logger_config = {'mailhost': (config["logger"]["mailhost"], config.getint("logger", "port")),
     #                  'fromaddr': config["logger"]["fromaddr"],
@@ -74,7 +45,7 @@ def main(argv=None,t_now=None,plots=True,saveplots=False):
     #                  'mail_handler': config.getboolean("logger", "mail_handler"),
     #                  'backup_count': config.getint("logger", "backup_count")}
 
-    if MICROGRID_PC:
+    if MICROGRID_PC:        
         talktoSQL = mysql.MySQLConnector(database=config["mysql"]["database"],
                                         host=config["mysql"]["host"],
                                         port=config["mysql"]["port"],
@@ -93,8 +64,7 @@ def main(argv=None,t_now=None,plots=True,saveplots=False):
         df.set_index(config["sql_table"]["time_column"], inplace=True)
     
     else:
-
-        df = pd.read_csv(data_opt['data_test_path'],
+        df = pd.read_csv(data_opt['data_path'],
                         index_col=0,
                         parse_dates=True,
                         comment='#')
@@ -144,7 +114,7 @@ def main(argv=None,t_now=None,plots=True,saveplots=False):
 
     idx_y = pd.date_range(start=test_y.index[-1],
                                                     periods=data_opt['n_timesteps'],
-                                                    freq='15T')
+                                                    freq=str(data_opt['freq'])+'min')
     forecast_dict = {'timestamp_utc': idx_y,
                      'timestamp_forecast_update': t_now,
                      'predicted_activepower_ev_1': y_hat,
@@ -156,10 +126,10 @@ def main(argv=None,t_now=None,plots=True,saveplots=False):
     # persistence forecast
     #
 
-    t_begin = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') - timedelta(days=7)
+    t_begin = pd.to_datetime(t_now).floor(str(data_opt['freq'])+'min').tz_localize('UTC') - timedelta(days=7)
     idx_x = pd.date_range(t_begin,
                         periods=int(config['data_opt']['n_timesteps']),
-                        freq='15min')
+                        freq=str(data_opt['freq'])+'min')
 
     y_hat = df[data_opt['out_col']].loc[idx_x].values.flatten()
     #idx_y = [t+pd.Timedelta(days=7) for t in idx_x]
@@ -177,12 +147,11 @@ def main(argv=None,t_now=None,plots=True,saveplots=False):
     else:
         forecast_df.index = forecast_df['timestamp_utc']
         forecast_df.drop(columns=['timestamp_utc'], inplace=True)
-        print(forecast_df)
         #forecast_df.to_csv(data_opt['out_dir']/Path('forecast_df.csv'))
     
-        t_begin = pd.to_datetime(t_now).floor('15min').tz_localize('UTC')# - timedelta(days=7)
-        #t_end = pd.to_datetime(t_now).floor('15min').tz_localize('UTC') + timedelta(days=3)
-        idx = pd.date_range(t_begin,periods=data_opt['n_timesteps'],freq='15min')
+        t_begin = pd.to_datetime(t_now).floor(str(data_opt['freq'])+'min').tz_localize('UTC')# - timedelta(days=7)
+        #t_end = pd.to_datetime(t_now).floor(str(data_opt['freq'])+'min').tz_localize('UTC') + timedelta(days=3)
+        idx = pd.date_range(t_begin,periods=data_opt['n_timesteps'],freq=str(data_opt['freq'])+'min')
         
         df = df.loc[idx][data_opt['out_col']]
         

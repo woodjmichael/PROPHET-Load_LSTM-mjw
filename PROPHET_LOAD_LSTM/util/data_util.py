@@ -33,6 +33,7 @@ def prepare_data(data, data_opt, dropnan=True):
     # extract raw values
     reframed = series_to_supervised(df=data, out_col=data_opt['out_col'], n_in=data_opt['n_back'],
                                     n_out=data_opt['n_timesteps'], lag=data_opt['lag'], dropnan=dropnan)
+    
     input_col = [col for col in reframed.columns if '-' in col]
     output_col = [col for col in reframed.columns if '+' in col]
     # output_col = list(set(reframed.columns) - set(input_col))
@@ -70,10 +71,15 @@ def prepare_data_train(data, data_opt):
     # extract raw values
     reframed = series_to_supervised(df=data, out_col=data_opt['out_col'], n_in=data_opt['n_back'],
                                     n_out=data_opt['n_timesteps'], lag=data_opt['lag'])
+    
+    n_train_hours = int(data_opt['tr_per'] * reframed.shape[0])
+    train = reframed.iloc[:n_train_hours, :]
+    test = reframed.iloc[n_train_hours:, :]
+    
     input_col = [col for col in reframed.columns if '-' in col]
     output_col = [col for col in reframed.columns if '+' in col]
 
-    df_X, df_y = reframed.loc[:, input_col].values, reframed.loc[:, output_col].values
+    df_X, df_y = train.loc[:, input_col].values, train.loc[:, output_col].values
 
     scaler_X = MinMaxScaler(feature_range=(0, 1))
     scaler_y = MinMaxScaler(feature_range=(0, 1))

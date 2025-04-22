@@ -15,7 +15,7 @@ out_dir = config.get("data_opt", "out_dir")
 # Train
 #
 
-lstm_forecaster_training.main([ini_path])
+"""lstm_forecaster_training.main([ini_path])"""
 
 #
 # Predict
@@ -24,9 +24,9 @@ lstm_forecaster_training.main([ini_path])
 #mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2019,12,13,0,0),plots=True)
 
 #
-# Random search
+# Hyper parameter search
 #
-"""search_space = []
+search_space = []
 results = pd.DataFrame({'units':[],'n_back':[],'n_dense':[],'dropout':[],'vloss':[]})
 for units in [24*x for x in [1,2,3,4,5,8,10,12,14,16,18,20]]:
     for n_back in [24*x for x in [1,2,3,4,5,8,10,12,14,16,18,20]]:
@@ -37,38 +37,29 @@ shuffle(search_space)
 for u,nb,nd,d in search_space:
     print(f'\n\n\n ///// units={u} n_back={nb} n_dense={nd} dropout={d}/////\n')
     try:
-        vloss = lstm_forecaster_training.main([ini_path],u,nb,nd,d)M
+        vloss = lstm_forecaster_training.main([ini_path],u,nb,nd,d)
     except:
         print('//////////////////// FAIL /////////////////////')
         vloss=pd.NA
     results.loc[len(results)] = [u,nb,nd,d,vloss]
-    results.to_csv(ini_path[:-19]+'data/output/random_search.csv')"""
+    results.to_csv(out_dir+'hp_search.csv')
     
 #
 # Test
 #
 
-mae = pd.DataFrame({'t':[],'persist':[],'lstm':[],'skill':[]})
-forecasts = pd.DataFrame({'timestamp_forecast_update':[],
-                          'predicted_activepower_ev_1':[],
-                          'persist':[]})
+"""forecasts = pd.DataFrame()
 
-for t in pd.date_range('2019-9-13','2019-12-28',freq='1h'):
-    mae_persist, mae_lstm, skill, new_forecast = lstm_forecaster.main([ini_path],t,plots=False)
+for t in pd.date_range('2019-9-13 0:00','2019-12-28 0:00',freq='1h'):
+    print('timestamp_update:',t)
+    
+    _, _, _, new_forecast = lstm_forecaster.main([ini_path],t,plots=False)
+    
     new_forecast.index = new_forecast.index.tz_convert(None)
-    
-    #forecast = forecast[:96] # only day-ahead
+    new_forecast.reset_index(inplace=True)
+    new_forecast.rename(columns={'index':'timestamp_forecast'},inplace=True)
+    new_forecast.insert(0,'timestamp_forecast_update',t)
 
-    forecasts = pd.concat([forecasts,new_forecast],axis=0)    
-    mae.loc[len(mae)] = [t,mae_persist,mae_lstm,skill]
+    forecasts = pd.concat([forecasts,new_forecast],axis=0,ignore_index=True)    
 
-forecasts.to_csv(out_dir+'forecasts.csv')
-
-#mae.to_csv(out_dir+'errors.csv')
-    
-#forecast = forecast[['predicted_activepower_ev1','persist']]
-#forecast.colummns = ['LSTM kW','Persist kW']
-#forecasts.to_csv(ini_path[:-19]+'forecasts.csv')
-
-print('Total skill',1-(mae.lstm.mean()/mae.persist.mean()))
-
+forecasts.to_csv(out_dir+'test_forecasts.csv')"""
