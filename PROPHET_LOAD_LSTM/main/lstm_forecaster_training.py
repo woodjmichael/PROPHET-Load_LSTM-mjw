@@ -31,14 +31,10 @@ def main(argv=None,units=None,n_back=None,n_dense=None,dropout=None):
     config = util.read_config(args.config)
     data_opt, model_opt = util.populate_opts(config)
     
-    if units is not None:
-        model_opt['LSTM_num_hidden_units'] = units
-    if n_back is not None:
-        data_opt['n_back'] = n_back
-    if n_dense is not None:
-        model_opt['Dense_input_dim'] = n_dense
-    if dropout is not None:
-        model_opt['Dropout_rate'] = dropout
+    model_opt['LSTM_num_hidden_units'] = model_opt['LSTM_num_hidden_units'] if units is None else units
+    data_opt['n_back'] = data_opt['n_back'] if n_back is None else n_back
+    model_opt['Dense_input_dim'] = model_opt['Dense_input_dim'] if n_dense is None else n_dense
+    model_opt['Dropout_rate'] = model_opt['Dropout_rate'] if dropout is None else dropout
     
     df = pd.read_csv(data_opt['data_path'],
                      index_col=0,
@@ -72,7 +68,6 @@ def main(argv=None,units=None,n_back=None,n_dense=None,dropout=None):
     model.save(model_opt['model_path'] / Path("model.h5"))
 
     val_loss = min(history.history['val_loss'])
-    #model.save(model_opt['model_path'] / Path(f"model_u{units}_nb{n_back}_nd{n_dense}_d{dropout}_vl{val_loss:.4f}.h5"))
     
     return val_loss
         

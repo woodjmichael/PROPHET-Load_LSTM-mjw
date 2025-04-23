@@ -31,11 +31,16 @@ WEEKDAY_LOOKUP={'0':'Mon','1':'Tue','2':'Wed','3':'Thu','4':'Fri','5':'Sat','6':
 # LOGGER = daiquiri.getLogger(__name__)
 
 
-def main(argv=None,t_now=None,plots=True,saveplots=False):
+def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None,n_dense=None,dropout=None):
     # read configuration file
     args = util.parse_arguments(argv)
     config = util.read_config(args.config)
     data_opt, model_opt = util.populate_opts(config)
+    
+    model_opt['LSTM_num_hidden_units'] = model_opt['LSTM_num_hidden_units'] if units is None else units
+    data_opt['n_back'] = data_opt['n_back'] if n_back is None else n_back
+    model_opt['Dense_input_dim'] = model_opt['Dense_input_dim'] if n_dense is None else n_dense
+    model_opt['Dropout_rate'] = model_opt['Dropout_rate'] if dropout is None else dropout
 
     # logger_config = {'mailhost': (config["logger"]["mailhost"], config.getint("logger", "port")),
     #                  'fromaddr': config["logger"]["fromaddr"],
