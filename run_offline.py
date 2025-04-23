@@ -17,7 +17,7 @@ out_dir = config.get("data_opt", "out_dir")
 # Train
 #
 
-lstm_forecaster_training.main([ini_path])
+"""lstm_forecaster_training.main([ini_path])"""
  
 #
 # Predict
@@ -30,7 +30,7 @@ lstm_forecaster_training.main([ini_path])
 # Test
 #
 
-forecasts = pd.DataFrame()
+"""forecasts = pd.DataFrame()
 
 for t in pd.date_range('2019-9-13 0:00','2019-12-28 0:00',freq='1h'):
     print('timestamp_update:',t)
@@ -44,12 +44,12 @@ for t in pd.date_range('2019-9-13 0:00','2019-12-28 0:00',freq='1h'):
 
     forecasts = pd.concat([forecasts,new_forecast],axis=0,ignore_index=True)    
 
-forecasts.to_csv(out_dir+'test_forecasts.csv')
+forecasts.to_csv(out_dir+'test_forecasts.csv')"""
 
 #
 # Hyper parameter search
 #
-"""
+
 # check for existing hp search
 already_searched_space = []
 if os.path.exists(out_dir + 'hp_search.csv'):
@@ -96,4 +96,4 @@ for units,n_back,n_dense,dropout in search_space:
         
     # output
     results.loc[len(results)] = {'units':units,'n_back':n_back,'n_dense':n_dense,'dropout':dropout,'vloss':vloss,'test_mae_pers':test_mae_pers,'test_mae_pred':test_mae_pred,'test_skill':test_skill}
-    results.to_csv(out_dir+'hp_search.csv')"""
+    results.to_csv(out_dir+'hp_search.csv')
