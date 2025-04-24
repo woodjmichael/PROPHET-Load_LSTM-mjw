@@ -14,7 +14,7 @@ def series_to_supervised(df, out_col, n_in=1, n_out=1, lag=0, dropnan=True):
         cols.append(df.shift(i))
         names += [('var%d(t-%d)' % (j + 1, i)) for j in range(n_vars)]
     # forecast sequence (t+l, t+l+1, ... t+l+n)
-    df_out = df[out_col]
+    df_out = df[['power']]
     n_vars = 1 if type(df_out) is pd.Series else df_out.shape[1]
     for i in range(lag, n_out + lag):
         cols.append(df_out.shift(-i))

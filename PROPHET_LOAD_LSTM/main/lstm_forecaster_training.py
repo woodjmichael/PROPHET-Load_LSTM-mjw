@@ -24,8 +24,8 @@ if MICROGRID_PC:
 # Logger definition
 # LOGGER = daiquiri.getLogger(__name__)
 
-
 def main(argv=None,units=None,n_back=None,n_dense=None,dropout=None):
+    
     # read configuration file
     args = util.parse_arguments(argv)
     config = util.read_config(args.config)
@@ -40,6 +40,7 @@ def main(argv=None,units=None,n_back=None,n_dense=None,dropout=None):
                      index_col=0,
                      parse_dates=True,
                      comment='#')
+    df.rename(columns={config["data_opt"]["out_col"]: 'power'}, inplace=True)
     df.index = df.index.tz_localize('UTC')
 
     df['year'] = df.index.year

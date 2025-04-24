@@ -43,9 +43,9 @@ def populate_opts(config):
         #'data_train_path':Path(config.get("data_opt", "data_path")) / Path(config.get('data_opt', 'train_csv')),
     }
     if data_opt['features'] == ['']:
-        data_opt['columns'] = data_opt['out_col']
+        data_opt['columns'] = ['power'] #data_opt['out_col']
     else:
-        data_opt['columns'] = data_opt['features'] + data_opt['out_col']
+        data_opt['columns'] = data_opt['features'] + ['power'] #data_opt['out_col']
     data_opt['n_features'] = len(data_opt['columns'])
 
     model_opt = {'Dense_input_dim': config.getint("model_opt", "Dense_input_dim"),

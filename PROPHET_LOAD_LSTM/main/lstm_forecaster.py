@@ -13,6 +13,8 @@ from PROPHET_LOAD_LSTM.util import util
 from PROPHET_LOAD_LSTM.util.data_util import prepare_data_test
 from PROPHET_LOAD_LSTM.util.model_util import attention, Custom_Loss_Prices
 
+from PROPHET_LOAD_LSTM.main import bayes_ensemble
+
 if MICROGRID_PC:
     from PROPHET_DB import mysql
 if not MICROGRID_PC:
@@ -29,6 +31,8 @@ WEEKDAY_LOOKUP={'0':'Mon','1':'Tue','2':'Wed','3':'Thu','4':'Fri','5':'Sat','6':
 
 # Logger definition
 # LOGGER = daiquiri.getLogger(__name__)
+
+import sys
 
 
 def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None,n_dense=None,dropout=None):
@@ -73,6 +77,7 @@ def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None
                         index_col=0,
                         parse_dates=True,
                         comment='#')
+        df.rename(columns={config["data_opt"]["out_col"]: 'power'}, inplace=True)
         df.index = df.index.tz_localize('UTC')
 
     df['year'] = df.index.year
@@ -136,11 +141,28 @@ def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None
                         periods=int(config['data_opt']['n_timesteps']),
                         freq=str(data_opt['freq'])+'min')
 
-    y_hat = df[data_opt['out_col']].loc[idx_x].values.flatten()
+    y_hat = df['power'].loc[idx_x].values.flatten()
     #idx_y = [t+pd.Timedelta(days=7) for t in idx_x]
 
     forecast_df['persist'] = y_hat
+    
+    #
+    # bayes ensemble/filter
+    #
 
+    forecast_df['timestamp_forecast_update'] = forecast_df['timestamp_forecast_update'].dt.floor('min')
+    forecast_df['timestamp_utc'] = forecast_df.timestamp_utc.dt.tz_localize(None)
+    forecast_df.rename(columns={'timestamp_utc':'timestamp_forecast'}, inplace=True)
+    
+    pred_bayes = bayes_ensemble.estimate(forecast_df)
+    
+    pred_bayes.predicted_activepower_ev_1 = pred_bayes.Bayes
+    pred_bayes.rename(columns={'timestamp_forecast':'timestamp_utc'}, inplace=True)
+    pred_bayes.timestamp_utc = pred_bayes.timestamp_utc.dt.tz_localize('UTC')
+    pred_bayes.timestamp_forecast_update = pred_bayes.timestamp_forecast_update + timedelta(minutes=1)
+    pred_bayes.drop(columns=['Bayes'], inplace=True)
+    
+    forecast_df = pred_bayes.copy()
 
     #
     # output
@@ -158,7 +180,7 @@ def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None
         #t_end = pd.to_datetime(t_now).floor(str(data_opt['freq'])+'min').tz_localize('UTC') + timedelta(days=3)
         idx = pd.date_range(t_begin,periods=data_opt['n_timesteps'],freq=str(data_opt['freq'])+'min')
         
-        df = df.loc[idx][data_opt['out_col']]
+        df = df.loc[idx,'power'].to_frame()
         
         mae_persist = (df.power - forecast_df.persist).dropna().abs().mean()
         mae_lstm =    (df.power - forecast_df.predicted_activepower_ev_1).dropna().abs().mean()

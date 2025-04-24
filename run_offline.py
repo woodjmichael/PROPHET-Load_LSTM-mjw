@@ -23,14 +23,14 @@ out_dir = config.get("data_opt", "out_dir")
 # Predict
 #
 
-"""mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2019,12,13,0,0),plots=True)"""
+mae_persist, mae_lstm, skill, forecast = lstm_forecaster.main([ini_path],dt(2019,9,13,0,0),plots=False)
 
 
 #
 # Test
 #
-
-"""forecasts = pd.DataFrame()
+"""
+forecasts = pd.DataFrame()
 
 for t in pd.date_range('2019-9-13 0:00','2019-12-28 0:00',freq='1h'):
     print('timestamp_update:',t)
@@ -44,18 +44,22 @@ for t in pd.date_range('2019-9-13 0:00','2019-12-28 0:00',freq='1h'):
 
     forecasts = pd.concat([forecasts,new_forecast],axis=0,ignore_index=True)    
 
-forecasts.to_csv(out_dir+'test_forecasts.csv')"""
+forecasts.to_csv(out_dir+'test_forecasts.csv')
+"""
 
 #
 # Hyper parameter search
 #
 
+"""
 # check for existing hp search
 already_searched_space = []
 if os.path.exists(out_dir + 'hp_search.csv'):
-    hp = pd.read_csv(out_dir + 'hp_search.csv',index_col=0)
-    for units,n_back,n_dense,dropout in hp[['units','n_back','n_dense','dropout']].values:
+    results = pd.read_csv(out_dir + 'hp_search.csv',index_col=0)
+    for units,n_back,n_dense,dropout in results[['units','n_back','n_dense','dropout']].values:
         already_searched_space.append((int(units),int(n_back),int(n_dense),dropout))
+else:
+    results = pd.DataFrame(columns=['units','n_back','n_dense','dropout','vloss','test_mae_pers','test_mae_pred','test_skill'])
 
 # create search space
 search_space = []
@@ -67,8 +71,7 @@ for units in [24*x for x in [1,2,3,4,5,6,8,10,12,14,16,18,20]]:
                     search_space.append((units,n_back,n_dense,dropout))         
 shuffle(search_space)
 
-# for each model
-results = pd.DataFrame(columns=['units','n_back','n_dense','dropout','vloss','test_mae_pers','test_mae_pred','test_skill'])
+# for each model in search space
 for units,n_back,n_dense,dropout in search_space:
     
     # train
@@ -97,3 +100,4 @@ for units,n_back,n_dense,dropout in search_space:
     # output
     results.loc[len(results)] = {'units':units,'n_back':n_back,'n_dense':n_dense,'dropout':dropout,'vloss':vloss,'test_mae_pers':test_mae_pers,'test_mae_pred':test_mae_pred,'test_skill':test_skill}
     results.to_csv(out_dir+'hp_search.csv')
+"""

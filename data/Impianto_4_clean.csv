@@ -1,4 +1,6 @@
-Time,power
+# Potenza in p.u.
+# Dati puliti secondo 'Viz and Cleaning 250418.ipynb'
+Time,Potenza
 2017-01-01 00:00:00,0.508002777766181
 2017-01-01 00:15:00,0.531690331954192
 2017-01-01 00:30:00,0.520602925561155
