@@ -17,3 +17,10 @@ python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU')
 # install the rest
 pip install pandas daiquiri scikit-learn matplotlib
 ```
+
+Good HP search (1 epoch)
+```
+,units,n_back,n_dense,dropout,vloss,test_mae_pers,test_mae_pred,test_skill,frac_0_mae_pers
+
+11,144,96,36,0.1,0.050905898213386536,0.04557496955470568,0.03828909344982988,0.15986573718124453,0.0
+```

@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 # convert series to supervised learning
-def series_to_supervised(df, out_col, n_in=1, n_out=1, lag=0, dropnan=True):
+def series_to_supervised(df, target_col, n_in=1, n_out=1, lag=0, dropnan=True):
     # frame as supervised learning
     n_vars = 1 if type(df) is pd.Series else df.shape[1]
     cols, names = list(), list()
@@ -14,7 +14,7 @@ def series_to_supervised(df, out_col, n_in=1, n_out=1, lag=0, dropnan=True):
         cols.append(df.shift(i))
         names += [('var%d(t-%d)' % (j + 1, i)) for j in range(n_vars)]
     # forecast sequence (t+l, t+l+1, ... t+l+n)
-    df_out = df[['power']]
+    df_out = df[target_col]
     n_vars = 1 if type(df_out) is pd.Series else df_out.shape[1]
     for i in range(lag, n_out + lag):
         cols.append(df_out.shift(-i))
@@ -31,8 +31,12 @@ def series_to_supervised(df, out_col, n_in=1, n_out=1, lag=0, dropnan=True):
 # transform series into train and test sets for supervised learning
 def prepare_data(data, data_opt, dropnan=True):
     # extract raw values
-    reframed = series_to_supervised(df=data, out_col=data_opt['out_col'], n_in=data_opt['n_back'],
-                                    n_out=data_opt['n_timesteps'], lag=data_opt['lag'], dropnan=dropnan)
+    reframed = series_to_supervised(df=data,
+                                    target_col=data_opt['target_col'],
+                                    n_in=data_opt['n_back'],
+                                    n_out=data_opt['n_timesteps'],
+                                    lag=data_opt['lag'],
+                                    dropnan=dropnan)
     
     input_col = [col for col in reframed.columns if '-' in col]
     output_col = [col for col in reframed.columns if '+' in col]
@@ -96,8 +100,13 @@ def prepare_data_train(data, data_opt):
 def prepare_data_test(data, scaler_X, data_opt, dropnan=False):
 
     # extract raw values
-    reframed = series_to_supervised(df=data, out_col=data_opt['out_col'], n_in=data_opt['n_back'],
-                                    n_out=data_opt['n_timesteps'], lag=data_opt['lag'], dropnan=dropnan)
+    reframed = series_to_supervised(df=data,
+                                    target_col=data_opt['target_col'],
+                                    n_in=data_opt['n_back'],
+                                    n_out=data_opt['n_timesteps'],
+                                    lag=data_opt['lag'],
+                                    dropnan=dropnan)
+    
     input_col = [col for col in reframed.columns if '-' in col]
     output_col = [col for col in reframed.columns if '+' in col]
     # output_col = list(set(reframed.columns) - set(input_col))

@@ -28,13 +28,15 @@ def read_config(config_file):
         sys.exit(1)
     return config
 
-def populate_opts(config):
+def read_options(ini_path=None,config=None):
+    config = read_config(ini_path) if config is None else config
     data_opt = {
         'n_back': config.getint("data_opt", "n_back"),  # 4*24*7
         'n_timesteps': config.getint("data_opt", "n_timesteps"),  # 4*4
         'lag': config.getint("data_opt", "lag"),
         'tr_per': config.getfloat("data_opt", "tr_per"),
         'out_col': config.get("data_opt", "out_col").split(','),
+        'target_col': config.get("data_opt", "target_col").split(','),
         'features': config.get("data_opt", "features").split(','),
         'freq': config.getint("data_opt", "freq"),
         #'tr_days_step': config.getint("data_opt", "tr_days_step"), # unused so removed
@@ -43,9 +45,11 @@ def populate_opts(config):
         #'data_train_path':Path(config.get("data_opt", "data_path")) / Path(config.get('data_opt', 'train_csv')),
     }
     if data_opt['features'] == ['']:
-        data_opt['columns'] = ['power'] #data_opt['out_col']
+        #data_opt['columns'] = ['power'] #data_opt['out_col']
+        data_opt['columns'] = data_opt['target_col']
     else:
-        data_opt['columns'] = data_opt['features'] + ['power'] #data_opt['out_col']
+        #data_opt['columns'] = data_opt['features'] + ['power'] #data_opt['out_col']
+        data_opt['columns'] = data_opt['features'] + data_opt['target_col'] #data_opt['out_col']
     data_opt['n_features'] = len(data_opt['columns'])
 
     model_opt = {'Dense_input_dim': config.getint("model_opt", "Dense_input_dim"),

@@ -12,6 +12,7 @@ import configparser
 from datetime import datetime, timedelta
 from pathlib import Path
 from random import shuffle
+import shutil
 
 if MICROGRID_PC:
     from PROPHET_DB import mysql
@@ -24,16 +25,22 @@ if MICROGRID_PC:
 # Logger definition
 # LOGGER = daiquiri.getLogger(__name__)
 
-def main(argv=None,units=None,n_back=None,n_dense=None,dropout=None):
+def main(argv=None,units=None,n_back=None,dropout=None):
     
     # read configuration file
     args = util.parse_arguments(argv)
     config = util.read_config(args.config)
-    data_opt, model_opt = util.populate_opts(config)
+    data_opt, model_opt = util.read_options(config=config)
+    
+    # tired of manually copying .ini to PROPHET-EMS
+    try:
+        ems_ini_path = Path(argv[0]).parent.parent / Path('PROPHET-EMS/ini/lstm_forecaster.ini')
+        shutil.copyfile(argv[0],ems_ini_path)    
+    except:
+        print('Error copying .ini file to PROPHET-EMS')
     
     model_opt['LSTM_num_hidden_units'] = model_opt['LSTM_num_hidden_units'] if units is None else units
     data_opt['n_back'] = data_opt['n_back'] if n_back is None else n_back
-    model_opt['Dense_input_dim'] = model_opt['Dense_input_dim'] if n_dense is None else n_dense
     model_opt['Dropout_rate'] = model_opt['Dropout_rate'] if dropout is None else dropout
     
     df = pd.read_csv(data_opt['data_path'],

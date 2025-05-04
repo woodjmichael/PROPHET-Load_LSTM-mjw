@@ -61,8 +61,8 @@ def create_model_attention(model_opt, train_X, train_y):
                    return_sequences=True)(decoder, initial_state=[encoder_last_h, encoder_last_c])
     outputs = TimeDistributed(Dense(output_train.shape[2]))(decoder)     #Dense(dense_units, trainable=True, activation=activation)(decoder)
     model = Model(inputs=input_train, outputs=outputs)
-    model.compile(#loss=model_opt["metrics"],
-                  loss=Custom_Loss_Prices(),
+    model.compile(loss=model_opt["metrics"],
+                  #loss=Custom_Loss_Prices(),
                   optimizer=model_opt["optimizer"])
 
     # Create early stopping function

@@ -1,4 +1,3 @@
-#%%
 import pandas as pd
 import emd
 
@@ -10,13 +9,12 @@ def emd_sift(df,col='Load (kW)'):
 
     return df    
 
-#%%
-df = pd.read_csv('data/train_JPL_v2.csv', index_col=0, parse_dates=True)
+df = pd.read_csv('data\Impianto_4_clean.csv', index_col=0, parse_dates=True,comment='#')
 
-df = emd_sift(df,'power')
+df = emd_sift(df,'Potenza')
 
-df
+print(df)
 
-# %%
+print(df.corr().loc['Potenza'])
 
-df.to_csv('data/train_JPL_v3.csv')
+df.to_csv('data\Impianto_4_clean_emd.csv')
