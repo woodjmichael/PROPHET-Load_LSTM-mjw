@@ -27,12 +27,12 @@ Offline options
 #ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
 ini_path = r"C:\Users\Admin\Code\PROPHET-Load_LSTM\lstm_forecaster.ini"
 
-TRAIN =     True
+TRAIN =     0
 PRELOAD =   0
 TEST =      0
-HP_SEARCH = 0
+HP_SEARCH = True
 
-HP_CONTINUE_PREVIOUS_SEARCH =   0 # picks up where last search left off
+HP_CONTINUE_PREVIOUS_SEARCH =   True # picks up where last search left off
 HP_COPY_PREVIOUS_SPACE =        0 # use existing search space but build new models
 HP_SHUFFLE =                    True
 
