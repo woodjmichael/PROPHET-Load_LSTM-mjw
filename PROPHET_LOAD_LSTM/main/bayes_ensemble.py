@@ -15,7 +15,8 @@ if not PROPHET_LSTM_ENV:
     
 #project_path = r'/home/mjw/Code/PROPHET-Load_LSTM-mjw/'
 #project_path = r'/home/mjw/Code/load-forecast/'
-project_path = r'C:\Users\Admin\Code\load-forecast/'
+#project_path = r'C:\Users\Admin\Code\load-forecast/'
+project_path = r'C:/Users/Admin/Code/PROPHET-Load_LSTM/'
 
 limit_days = list(range(7))
 prior_days = 7
@@ -28,11 +29,13 @@ calc_errors=True
 Impianto 4
 """   
     
-filepath = project_path + 'data/Impianto_4_clean.csv'
+filepath = project_path + 'data/input/Impianto_4_clean_emd.csv'
 load_col = 'Potenza'
 
 t_test_begin = pd.Timestamp('2019-9-13 0:00')
 
+#persist_filepath =   project_path + r'data/output/impianto_4/u576_nb480_d1/test_forecasts_p20_sk15_psk53.csv'
+#forecast_filepath2 = project_path + r'data/output/impianto_4/u576_nb480_d1/test_forecasts_p20_sk15_psk53.csv'
 persist_filepath =   project_path + r'forecasts/impianto_4/PROPHET-Load_LSTM/u144_ud36_nb96_d0.1/test_forecasts.csv'
 forecast_filepath2 = project_path + r'forecasts/impianto_4/PROPHET-Load_LSTM/u144_ud36_nb96_d0.1/test_forecasts.csv'
 forecast_filepath3 = None #project_path + r'forecasts/impianto_4/PROPHET-Load_LSTM/u24_ud36_nb432_d0/test_forecasts.csv'
@@ -44,6 +47,8 @@ col_pred = 'predicted_activepower_ev_1'
 col_pers = 'persist'
 col_load = 'power'
 forecast_length_h = 36
+
+normalize_max = True
     
 """
 JPL
@@ -219,7 +224,8 @@ def read_historical_measurements(filepath,
                                  resamp='15min',
                                  limit_days=list(range(7)),
                                  prior_days=7,
-                                 plot=False):
+                                 plot=False,
+                                 normalize_max=True):
     
     meas = pd.read_csv(filepath,
                        index_col=0,
@@ -230,8 +236,11 @@ def read_historical_measurements(filepath,
 
     meas = meas[['Load']]
 
-    meas_max = meas.Load.max()
-    meas = meas / meas_max
+    if normalize_max:
+        meas_max = meas.Load.max()
+        meas = meas / meas_max
+    else:
+        meas_max = 1
 
     meas = meas[meas.index.weekday.isin(limit_days)]
 
@@ -1113,7 +1122,8 @@ def read_measurements_forecasts():
                                                     t_test_begin=t_test_begin,
                                                     resamp=resamp,
                                                     limit_days=limit_days,
-                                                    prior_days=prior_days)
+                                                    prior_days=prior_days,
+                                                    normalize_max=normalize_max)
     
     pred1 = read_forecasts(  persist_filepath,
                             forecast_length_h,
@@ -1304,7 +1314,7 @@ if __name__ == '__main__':
     """
     
     # predict starting from t_test_begin
-    pred_list = [pred[pred.timestamp_update>=t_test_begin] for pred in pred_list]
+    pred_list = [pred[pred.timestamp_update>=t_test_begin] if pred is not None else None for pred in pred_list]
     
     pred_bayes = predict(   pred_list,
                             err_dist_list,

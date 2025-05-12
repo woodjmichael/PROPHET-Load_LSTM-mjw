@@ -9,7 +9,7 @@ from shutil import copyfile
 
 import numpy as np 
 import pandas as pd
-
+ 
 from PROPHET_LOAD_LSTM.main import lstm_forecaster_training, lstm_forecaster
 from PROPHET_LOAD_LSTM.util import util
 
@@ -32,15 +32,18 @@ PRELOAD =   0
 TEST =      0
 HP_SEARCH = True
 
-HP_CONTINUE_PREVIOUS_SEARCH =   True # picks up where last search left off
+TEST_OUTPUT_FILENAME = 'test_forecasts_debug.csv' #'train_test_forecasts.csv'
+TEST_BEGIN = '2019-9-13 0:00'
+TEST_END = '2019-12-27 23:00'
+TEST_FREQ = '1h' # '24h' for peaks
+
+HP_CONTINUE_PREVIOUS_SEARCH =   0 # picks up where last search left off
 HP_COPY_PREVIOUS_SPACE =        0 # use existing search space but build new models
 HP_SHUFFLE =                    True
+HP_RESULTS_FILENAME = 'hp_search_patience1_new250508.csv'
+HP_PREV_RESULTS_FILENAME = 'hp_search_patience1.csv' #Path('hp_search_patience1_customLF.csv')
 
-TEST_BEGIN = '2019-9-13 0:00'
-TEST_END = '2019-12-28 0:00'
-TEST_FREQ = '24h' # '1h'
-
-LIMIT = None
+LIMIT = None # int or None
 
 
 """
@@ -54,18 +57,7 @@ if not os.path.exists(data_opt['out_dir']):
 if not os.path.exists(model_opt['model_path']):
     os.makedirs(model_opt['model_path'])
 
-"""
-Train
-"""
-
-if TRAIN: lstm_forecaster_training.main([ini_path])
-
-
-"""
-Pre-Load
-"""
-
-if PRELOAD:
+def preload_data():
     df = pd.read_csv(   data_opt['data_path'],
                         index_col=0,
                         parse_dates=True,
@@ -83,25 +75,16 @@ if PRELOAD:
     
     model = keras.models.load_model(model_opt["model_path"] / Path('model.h5'),
                                     custom_objects={"attention": attention,
-                                                    #'Custom_Loss_Prices':Custom_Loss_Prices,
+                                                    'Custom_Loss_Prices':Custom_Loss_Prices,
                                                     })
     
-else:
-    df = None
-    model = None
+    return df, model
 
-
-"""
-Test
-"""
-
-output_filename = 'test_forecasts.csv' #'train_test_forecasts.csv'
-
-if TEST: 
-    
-    if os.path.exists(data_opt['out_dir']/Path(output_filename)):
+def test_range(df,model):
+    filename = TEST_OUTPUT_FILENAME
+    if os.path.exists(data_opt['out_dir']/Path(filename)):
         t=pd.Timestamp.now()
-        output_filename = output_filename.split('.')[0] + f'_{t.year-2000}{t.month}{t.day}{t.hour}{t.minute}.csv'        
+        filename = filename.split('.')[0] + f'_{t.year-2000}{t.month}{t.day}{t.hour}{t.minute}.csv'        
     
     forecasts = pd.DataFrame()
     for t in pd.date_range(TEST_BEGIN,TEST_END,freq=TEST_FREQ)[:LIMIT]:
@@ -113,20 +96,13 @@ if TEST:
         new_forecast.rename(columns={'index':'timestamp_forecast'},inplace=True)
         new_forecast.insert(0,'timestamp_forecast_update',t)
         forecasts = pd.concat([forecasts,new_forecast],axis=0,ignore_index=True)    
-    forecasts.to_csv(data_opt['out_dir']/Path(output_filename))
+    forecasts.to_csv(data_opt['out_dir'] / Path(filename))    
 
-
-"""
-Hyper parameter search
-"""
-
-results_filename = 'hp_search_patience1.csv'
-prev_results_filepath = None #Path('hp_search_patience1_customLF.csv')
-
-if HP_SEARCH:        
+def hyper_parameter_search():
     # setup files
-    results_filepath = data_opt['out_dir'] / Path(results_filename)
-    if os.path.exists(results_filepath):
+    results_filepath = data_opt['out_dir'] / Path(HP_RESULTS_FILENAME)
+    prev_results_filepath = data_opt['out_dir'] / Path(HP_PREV_RESULTS_FILENAME)
+    if os.path.exists(results_filepath) and not HP_CONTINUE_PREVIOUS_SEARCH:
         input('Warning you may be overwriting results (enter to continue):')
     copyfile('lstm_forecaster.ini',data_opt['out_dir']/Path('lstm_forecaster_copy.ini'))
     copyfile('run_offline.py',data_opt['out_dir']/Path('run_offline_copy.py'))
@@ -221,4 +197,37 @@ if HP_SEARCH:
                                         'sec_elaps':(pd.Timestamp.now()-tic2).seconds}
         results.sort_values('vloss',ascending=False).to_csv(results_filepath)
 
-print('Ding! Fries are done. Elapsed time:',dt.now()-tic)
+"""
+Train
+"""
+
+if TRAIN:
+    lstm_forecaster_training.main([ini_path])
+
+
+"""
+Pre-Load
+"""
+
+if PRELOAD:
+    df,model = preload_data()
+else:
+    df = None
+    model = None    
+
+"""
+Test
+"""
+
+if TEST: 
+    test_range(df,model)
+
+
+"""
+Hyper parameter search
+"""
+
+if HP_SEARCH:        
+    hyper_parameter_search()
+    
+print('Ding! Fries are done. Elapsed time:',dt.now()-tic)    

@@ -1,5 +1,5 @@
-MICROGRID_PC = False
-SQL = False
+MICROGRID_PC = 0
+SQL = 0
 BAYES = False
 
 import os
@@ -121,7 +121,7 @@ def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None
     if model is None:
         model = keras.models.load_model(model_opt["model_path"] / Path('model.h5'),
                                         custom_objects={"attention": attention,
-                                                        #'Custom_Loss_Prices':Custom_Loss_Prices,
+                                                        'Custom_Loss_Prices':Custom_Loss_Prices,
                                                         })
     y_hat_sc = model.predict(test_X)
 
