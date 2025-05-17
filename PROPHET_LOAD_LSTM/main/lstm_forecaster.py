@@ -1,5 +1,5 @@
-MICROGRID_PC = 0
-SQL = 0
+MICROGRID_PC = False
+SQL = False
 BAYES = False
 
 import os

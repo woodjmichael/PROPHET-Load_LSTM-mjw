@@ -27,27 +27,34 @@ Offline options
 #ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
 ini_path = r"C:\Users\Admin\Code\PROPHET-Load_LSTM\lstm_forecaster.ini"
 
-TRAIN =     0
-PRELOAD =   0
-TEST =      0
-HP_SEARCH = True
+TRAIN =     1
+PRELOAD =   1
+TEST =      1
+HP_SEARCH = 0
 
-TEST_OUTPUT_FILENAME = 'test_forecasts_debug.csv' #'train_test_forecasts.csv'
-TEST_BEGIN = '2019-9-13 0:00'
-TEST_END = '2019-12-27 23:00'
-TEST_FREQ = '1h' # '24h' for peaks
+TEST_OUTPUT_FILENAME = 'test_forecasts.csv' #'train_test_forecasts.csv'
+#TEST_BEGIN = '2019-9-13 0:00' # impianto 4
+#TEST_END = '2019-12-27 23:00' # impianto 4
+TEST_BEGIN = '2019-8-6' # zeh
+TEST_END = '2019-12-25' # zeh
+TEST_FREQ = '24h'# '24h' for peaks, else '1h'
 
 HP_CONTINUE_PREVIOUS_SEARCH =   0 # picks up where last search left off
 HP_COPY_PREVIOUS_SPACE =        0 # use existing search space but build new models
 HP_SHUFFLE =                    True
-HP_RESULTS_FILENAME = 'hp_search_patience1_new250508.csv'
+HP_RESULTS_FILENAME = 'hp_search_patience1.csv'
 HP_PREV_RESULTS_FILENAME = 'hp_search_patience1.csv' #Path('hp_search_patience1_customLF.csv')
+
+HP_UNITS = [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,30,32,36]]
+HP_NBACK = [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,30,32,36]]
+HP_DROPOUT = [0,0.1,0.2]
 
 LIMIT = None # int or None
 
 
 """
 Options
+
 """
 
 data_opt, model_opt = util.read_options(ini_path)
@@ -85,6 +92,9 @@ def test_range(df,model):
     if os.path.exists(data_opt['out_dir']/Path(filename)):
         t=pd.Timestamp.now()
         filename = filename.split('.')[0] + f'_{t.year-2000}{t.month}{t.day}{t.hour}{t.minute}.csv'        
+    
+    copyfile('lstm_forecaster.ini',data_opt['out_dir']/Path('lstm_forecaster_copy.ini'))
+    copyfile('run_offline.py',data_opt['out_dir']/Path('run_offline_copy.py'))
     
     forecasts = pd.DataFrame()
     for t in pd.date_range(TEST_BEGIN,TEST_END,freq=TEST_FREQ)[:LIMIT]:
@@ -128,9 +138,9 @@ def hyper_parameter_search():
         search_space = prev_search_space.copy()
     else:    
         search_space = []
-        for units in [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,30,32,36]]:
-            for n_back in [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,30,32,36]]:
-                for dropout in [0,0.1,0.2]:
+        for units in HP_UNITS: 
+            for n_back in HP_NBACK: 
+                for dropout in HP_DROPOUT: 
                     if HP_CONTINUE_PREVIOUS_SEARCH:
                         if (units,n_back,dropout) not in prev_search_space:
                             search_space.append((units,n_back,dropout))         
