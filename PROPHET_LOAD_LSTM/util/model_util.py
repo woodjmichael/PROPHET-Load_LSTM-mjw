@@ -50,6 +50,49 @@ class attention(Layer):
         context = K.sum(context, axis=1)
         return context
 
+def create_model_attention_classify(model_opt, train_X, train_y):
+    input_train = Input(shape=(train_X.shape[1], train_X.shape[2]))
+    output_train = Input(shape=(train_y.shape[1], train_y.shape[2]))
+    ENC_layer, encoder_last_h, encoder_last_c = LSTM(model_opt['LSTM_num_hidden_units'], return_sequences=True, return_state=True)(input_train)
+    attention_layer = attention()(ENC_layer)
+    decoder = RepeatVector(output_train.shape[1])(attention_layer)
+    decoder = LSTM(model_opt['LSTM_num_hidden_units'], return_state=False,
+                   return_sequences=True)(decoder, initial_state=[encoder_last_h, encoder_last_c])
+    #outputs = TimeDistributed(Dense(output_train.shape[2]))(decoder)
+    outputs = Dense(1, trainable=True, activation='relu')(decoder)
+    #outputs2 = Dense(1, trainable=True, activation='relu')(outputs)
+    model = Model(inputs=input_train, outputs=outputs)
+    model.compile(#loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+                  #loss=model_opt["metrics"],
+                  #loss=Custom_Loss_Prices(),
+                  loss=Custom_Accuracy(),
+                  optimizer=model_opt["optimizer"])
+
+    # Create early stopping function
+    erlstp_callback = callbacks.EarlyStopping(monitor="val_loss",  # loss o val_loss
+                                              patience=model_opt["patience"],
+                                              mode="min",
+                                              restore_best_weights=True,
+                                              verbose=1)
+    # Create a callback that saves the model's weights
+    ckpt_callback = callbacks.ModelCheckpoint(str(model_opt["model_path"] / Path('model.h5')),
+                                              save_best_only=True,
+                                              save_weights_only=False,
+                                              monitor='loss',
+                                              mode='min')
+    # Callback stop on NaN
+    nan_callback = callbacks.TerminateOnNaN()
+
+    cb_list = [erlstp_callback, nan_callback, ckpt_callback]
+    model.summary()
+    # fit network
+    # history = model.fit(train_X, train_y, epochs=model_opt['epochs'], callbacks=cb_list,
+    #                     validation_split=model_opt['validation_split'])
+    # history = 1
+
+    history = model.fit(train_X, train_y, epochs=model_opt['epochs'], callbacks=cb_list, validation_split=model_opt['validation_split'])
+    return model, history
+
 
 def create_model_attention(model_opt, train_X, train_y):
     input_train = Input(shape=(train_X.shape[1], train_X.shape[2]))

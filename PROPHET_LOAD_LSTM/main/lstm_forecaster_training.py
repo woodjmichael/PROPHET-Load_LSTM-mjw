@@ -1,11 +1,12 @@
 MICROGRID_PC = False
+PEAK_HOUR = False
 
 import pandas as pd
 from datetime import datetime
 from pickle import dump
 from PROPHET_LOAD_LSTM.util import util
 from PROPHET_LOAD_LSTM.util.data_util import prepare_data
-from PROPHET_LOAD_LSTM.util.model_util import create_model_attention
+from PROPHET_LOAD_LSTM.util.model_util import create_model_attention, create_model_attention_classify
 
 import argparse
 import configparser
@@ -25,7 +26,7 @@ if MICROGRID_PC:
 # Logger definition
 # LOGGER = daiquiri.getLogger(__name__)
 
-def main(argv=None,units=None,n_back=None,dropout=None):
+def main(argv=None,units=None,n_back=None,dropout=None,features=None,epochs=None):
     
     # read configuration file
     args = util.parse_arguments(argv)
@@ -42,6 +43,9 @@ def main(argv=None,units=None,n_back=None,dropout=None):
     model_opt['LSTM_num_hidden_units'] = model_opt['LSTM_num_hidden_units'] if units is None else units
     data_opt['n_back'] = data_opt['n_back'] if n_back is None else n_back
     model_opt['Dropout_rate'] = model_opt['Dropout_rate'] if dropout is None else dropout
+    data_opt['columns'] = data_opt['columns'] if features is None else features + data_opt['target_col'] 
+    data_opt['n_features'] = len(data_opt['columns'])
+    model_opt['epochs'] = model_opt['epochs'] if epochs is None else epochs
     
     df = pd.read_csv(data_opt['data_path'],
                      index_col=0,
@@ -56,6 +60,9 @@ def main(argv=None,units=None,n_back=None,dropout=None):
     df['hour'] = df.index.hour
     df['minute'] = df.index.minute
     df = df[data_opt['columns']]
+    
+    if PEAK_HOUR:
+        df[data_opt['target_col']] = df[data_opt['target_col']].astype('int32')
 
     ## definizione tempi inizio
     now = datetime.utcnow()

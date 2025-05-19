@@ -21,22 +21,24 @@ from PROPHET_LOAD_LSTM.main import bayes_ensemble as bayes
 tic = dt.now()
 
 """
-Offline options
+Options
 """
 
 #ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
 ini_path = r"C:\Users\Admin\Code\PROPHET-Load_LSTM\lstm_forecaster.ini"
 
-TRAIN =     1
-PRELOAD =   1
-TEST =      1
-HP_SEARCH = 0
+
+TRAIN =     0
+PRELOAD =   0
+TEST =      0
+HP_SEARCH = True
+HP_TEST =   0
 
 TEST_OUTPUT_FILENAME = 'test_forecasts.csv' #'train_test_forecasts.csv'
-#TEST_BEGIN = '2019-9-13 0:00' # impianto 4
-#TEST_END = '2019-12-27 23:00' # impianto 4
-TEST_BEGIN = '2019-8-6' # zeh
-TEST_END = '2019-12-25' # zeh
+TEST_BEGIN = '2019-9-13 0:00' # impianto 4
+TEST_END = '2019-12-27 23:00' # impianto 4
+#TEST_BEGIN = '2019-8-6' # zeh
+#TEST_END = '2019-12-25' # zeh
 TEST_FREQ = '24h'# '24h' for peaks, else '1h'
 
 HP_CONTINUE_PREVIOUS_SEARCH =   0 # picks up where last search left off
@@ -48,6 +50,10 @@ HP_PREV_RESULTS_FILENAME = 'hp_search_patience1.csv' #Path('hp_search_patience1_
 HP_UNITS = [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,30,32,36]]
 HP_NBACK = [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,30,32,36]]
 HP_DROPOUT = [0,0.1,0.2]
+HP_FEATURES = [['power'],
+               ['power','month','day','hour','minute'],
+               ['power','month','day','hour','minute','IMF1PeakHour','IMF2PeakHour']]
+HP_DEFINE_SEARCH_SPACE = None # [(72,192,0.2),(72,192,0.1),(72,192,0.0),(72,96,0.2),(72,120,0.0)] # list or None
 
 LIMIT = None # int or None
 
@@ -59,10 +65,32 @@ Options
 
 data_opt, model_opt = util.read_options(ini_path)
 
+# if HP_SEARCH:
+#     data_opt['out_dir'] = data_opt['out_dir'] / Path('hpsearch/')
+#     model_opt['model_path'] = model_opt['model_path'] / Path('hpsearch/')
+# elif TEST:
+#     units = model_opt['LSTM_num_hidden_units']
+#     n_back = data_opt['n_back']
+#     dropout = model_opt['Dropout_rate']
+#     data_opt['out_dir'] = data_opt['out_dir'] / Path(f'u{units}_nb{n_back}_d{dropout}/')
+#     model_opt['model_path'] = model_opt['model_path']  / Path(f'u{units}_nb{n_back}_d{dropout}/')
+
+# if os.path.exists(data_opt['out_dir']):
+#     data_opt['out_dir'] = data_opt['out_dir'] / Path(f'{tic.year-2000}{tic.month}{tic.day}-{tic.hour}{tic.minute}')
+# os.makedirs(data_opt['out_dir'])
+
+# if os.path.exists(model_opt['model_path']):
+#     model_opt['model_path'] = data_opt['out_dir']#model_opt['model_path'] / Path(f'{tic.year-2000}{tic.month}{tic.day}-{tic.hour}{tic.minute}')
+# os.makedirs(model_opt['model_path'])
+
 if not os.path.exists(data_opt['out_dir']):
     os.makedirs(data_opt['out_dir'])
+
 if not os.path.exists(model_opt['model_path']):
     os.makedirs(model_opt['model_path'])
+
+copyfile('lstm_forecaster.ini',data_opt['out_dir']/Path('lstm_forecaster_copy.ini'))
+copyfile('run_offline.py',data_opt['out_dir']/Path('run_offline_copy.py'))
 
 def preload_data():
     df = pd.read_csv(   data_opt['data_path'],
@@ -87,35 +115,44 @@ def preload_data():
     
     return df, model
 
-def test_range(df,model):
-    filename = TEST_OUTPUT_FILENAME
-    if os.path.exists(data_opt['out_dir']/Path(filename)):
-        t=pd.Timestamp.now()
-        filename = filename.split('.')[0] + f'_{t.year-2000}{t.month}{t.day}{t.hour}{t.minute}.csv'        
-    
-    copyfile('lstm_forecaster.ini',data_opt['out_dir']/Path('lstm_forecaster_copy.ini'))
-    copyfile('run_offline.py',data_opt['out_dir']/Path('run_offline_copy.py'))
+def test_range(df,model,units=None,n_back=None,dropout=None,features=None):
+    #filename = TEST_OUTPUT_FILENAME
+    # if os.path.exists(data_opt['out_dir']/Path(filename)):
+    #     t=pd.Timestamp.now()
+    #     filename = filename.split('.')[0] + f'_{t.year-2000}{t.month}{t.day}{t.hour}{t.minute}.csv'        
+
     
     forecasts = pd.DataFrame()
     for t in pd.date_range(TEST_BEGIN,TEST_END,freq=TEST_FREQ)[:LIMIT]:
     #for t in pd.date_range('2017-1-8 0:00','2019-12-28 0:00',freq='1h')[:limit]:
         print('test timestamp_update:',t)
-        _, _, _, new_forecast = lstm_forecaster.main([ini_path],t,df=df,model=model)
+        _, _, _, new_forecast = lstm_forecaster.main([ini_path],t,df=df,model=model,units=units,n_back=n_back,dropout=dropout,features=None)
         new_forecast.index = new_forecast.index.tz_convert(None)
         new_forecast.reset_index(inplace=True)
         new_forecast.rename(columns={'index':'timestamp_forecast'},inplace=True)
         new_forecast.insert(0,'timestamp_forecast_update',t)
         forecasts = pd.concat([forecasts,new_forecast],axis=0,ignore_index=True)    
-    forecasts.to_csv(data_opt['out_dir'] / Path(filename))    
-
+    
+    if not HP_TEST:
+        forecasts.to_csv(data_opt['out_dir'] / Path(TEST_OUTPUT_FILENAME))    
+    else:
+        forecasts.to_csv(data_opt['out_dir'] / Path(TEST_OUTPUT_FILENAME.split('.')[0]+f'_u{units}_nb{n_back}_d{dropout}.csv'))    
+        
 def hyper_parameter_search():
+    
+    # if not os.path.exists(data_opt['out_dir']):
+    #     os.makedirs(data_opt['out_dir'])
+    # if not os.path.exists(model_opt['model_path']):
+    #     os.makedirs(model_opt['model_path'])
+    
     # setup files
     results_filepath = data_opt['out_dir'] / Path(HP_RESULTS_FILENAME)
     prev_results_filepath = data_opt['out_dir'] / Path(HP_PREV_RESULTS_FILENAME)
     if os.path.exists(results_filepath) and not HP_CONTINUE_PREVIOUS_SEARCH:
         input('Warning you may be overwriting results (enter to continue):')
-    copyfile('lstm_forecaster.ini',data_opt['out_dir']/Path('lstm_forecaster_copy.ini'))
-    copyfile('run_offline.py',data_opt['out_dir']/Path('run_offline_copy.py'))
+    
+    # copyfile('lstm_forecaster.ini',data_opt['out_dir']/Path('lstm_forecaster_copy.ini'))
+    # copyfile('run_offline.py',data_opt['out_dir']/Path('run_offline_copy.py'))
 
     # check for existing hp search
     if (HP_CONTINUE_PREVIOUS_SEARCH or HP_COPY_PREVIOUS_SPACE) \
@@ -141,24 +178,31 @@ def hyper_parameter_search():
         for units in HP_UNITS: 
             for n_back in HP_NBACK: 
                 for dropout in HP_DROPOUT: 
-                    if HP_CONTINUE_PREVIOUS_SEARCH:
-                        if (units,n_back,dropout) not in prev_search_space:
-                            search_space.append((units,n_back,dropout))         
-                    else:    
-                        search_space.append((units,n_back,dropout))     
+                    for features in HP_FEATURES:
+                        if HP_CONTINUE_PREVIOUS_SEARCH:
+                            if (units,n_back,dropout,features) not in prev_search_space:
+                                search_space.append((units,n_back,dropout,features))         
+                        else:    
+                            search_space.append((units,n_back,dropout,features))     
     if HP_SHUFFLE:
         shuffle(search_space)
+    if HP_DEFINE_SEARCH_SPACE is not None:
+        search_space = HP_DEFINE_SEARCH_SPACE
 
     # for each model in search space
-    for units,n_back,dropout in search_space[:LIMIT]:
+    for units,n_back,dropout,features in search_space[:LIMIT]:
         
-        print(f'\n\n\n ///// HP TEST: units={units} n_back={n_back} dropout={dropout}/////\n')
+        print(f'\n\n\n ///// HP TEST: units={units} n_back={n_back} dropout={dropout} n_feats={len(features)}/////\n')
         tic2 = pd.Timestamp.now()
         try:
             # train
-            vloss = lstm_forecaster_training.main([ini_path],units,n_back,dropout)
+            vloss = lstm_forecaster_training.main([ini_path],units,n_back,dropout,features,LIMIT)
             
             # test
+            
+            if HP_TEST:
+                df,model = preload_data()
+                test_range(df,model,units,n_back,dropout)
             
             # model = keras.models.load_model(model_opt["model_path"] / Path('model.h5'),
             #             custom_objects={"attention": attention,
@@ -198,6 +242,7 @@ def hyper_parameter_search():
         results.loc[len(results)] = {   'units':units,
                                         'n_back':n_back,
                                         'dropout':dropout,
+                                        'features':'-'.join(features),
                                         'vloss':vloss,
                                         #'mae_pers':test_mae_pers,
                                         #'mae_pred':test_mae_pred,                                        

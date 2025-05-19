@@ -42,7 +42,7 @@ WEEKDAY_LOOKUP={'0':'Mon','1':'Tue','2':'Wed','3':'Thu','4':'Fri','5':'Sat','6':
 # LOGGER = daiquiri.getLogger(__name__)
 
 
-def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None,n_dense=None,dropout=None,df=None,model=None):
+def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None,n_dense=None,dropout=None,features=None,df=None,model=None):
     # read configuration file
     args = util.parse_arguments(argv)
     config = util.read_config(args.config)
@@ -52,6 +52,8 @@ def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None
     data_opt['n_back'] = data_opt['n_back'] if n_back is None else n_back
     model_opt['Dense_input_dim'] = model_opt['Dense_input_dim'] if n_dense is None else n_dense
     model_opt['Dropout_rate'] = model_opt['Dropout_rate'] if dropout is None else dropout
+    data_opt['columns'] = data_opt['columns'] if features is None else features + data_opt['target_col'] 
+    data_opt['n_features'] = len(data_opt['columns'])
 
     # logger_config = {'mailhost': (config["logger"]["mailhost"], config.getint("logger", "port")),
     #                  'fromaddr': config["logger"]["fromaddr"],
