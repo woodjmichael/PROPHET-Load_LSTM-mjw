@@ -28,15 +28,17 @@ ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
 #ini_path = r"C:\Users\Admin\Code\PROPHET-Load_LSTM\lstm_forecaster.ini"
 
 
-TRAIN =     0
-PRELOAD =   0
-TEST =      0
+TRAIN =     True
+PRELOAD =   True
+TEST =      True
 
-HP_SEARCH = True
+HP_SEARCH = 0
 
 TEST_OUTPUT_FILENAME = 'test_forecasts.csv' #'train_test_forecasts.csv'
-#TEST_BEGIN,TEST_END = '2019-9-13 0:00','2019-12-27 23:00' # impianto 4
-TEST_BEGIN,TEST_END = '2019-8-6','2019-12-25' # zeh
+TEST_BEGIN = '2019-9-13 0:00' # impianto 4
+TEST_END = '2019-12-27 23:00' # impianto 4
+#TEST_BEGIN = '2019-8-6' # zeh
+#TEST_END = '2019-12-25' # zeh
 TEST_FREQ = '24h'# '24h' for peaks, else '1h'
 
 HP_CONTINUE_PREVIOUS_SEARCH =   0 # picks up where last search left off
@@ -49,7 +51,7 @@ HP_UNITS = [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,
 HP_NBACK = [int(24*x) for x in [0.5,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26,28,30,32,36]]
 HP_DROPOUT = [0,0.1,0.2]
 
-LIMIT = None # int or None
+LIMIT = 1 # int or None
 
 
 """
@@ -124,8 +126,9 @@ def test_range(df,model):
     
     forecasts = pd.DataFrame()
     for t in pd.date_range(TEST_BEGIN,TEST_END,freq=TEST_FREQ)[:LIMIT]:
+    #for t in pd.date_range('2017-1-8 0:00','2019-12-28 0:00',freq='1h')[:limit]:
         print('test timestamp_update:',t)
-        _, _, _, new_forecast = lstm_forecaster.main([ini_path],t,df=df,model=model,epochs=LIMIT)
+        _, _, _, new_forecast = lstm_forecaster.main([ini_path],t,df=df,model=model)
         new_forecast.index = new_forecast.index.tz_convert(None)
         new_forecast.reset_index(inplace=True)
         new_forecast.rename(columns={'index':'timestamp_forecast'},inplace=True)
@@ -188,7 +191,7 @@ def hyper_parameter_search():
         tic2 = pd.Timestamp.now()
         try:
             # train
-            vloss = lstm_forecaster_training.main([ini_path],units,n_back,dropout,LIMIT)
+            vloss = lstm_forecaster_training.main([ini_path],units,n_back,dropout)
             
             # test
             
@@ -244,7 +247,7 @@ Train
 """
 
 if TRAIN:
-    lstm_forecaster_training.main([ini_path],epochs=LIMIT)
+    lstm_forecaster_training.main([ini_path])
 
 
 """

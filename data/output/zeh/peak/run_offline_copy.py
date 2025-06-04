@@ -28,11 +28,11 @@ ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
 #ini_path = r"C:\Users\Admin\Code\PROPHET-Load_LSTM\lstm_forecaster.ini"
 
 
-TRAIN =     0
-PRELOAD =   0
-TEST =      0
+TRAIN =     True
+PRELOAD =   True
+TEST =      True
 
-HP_SEARCH = True
+HP_SEARCH = 0
 
 TEST_OUTPUT_FILENAME = 'test_forecasts.csv' #'train_test_forecasts.csv'
 #TEST_BEGIN,TEST_END = '2019-9-13 0:00','2019-12-27 23:00' # impianto 4

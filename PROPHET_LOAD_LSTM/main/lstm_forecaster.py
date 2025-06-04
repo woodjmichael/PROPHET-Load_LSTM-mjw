@@ -42,7 +42,7 @@ WEEKDAY_LOOKUP={'0':'Mon','1':'Tue','2':'Wed','3':'Thu','4':'Fri','5':'Sat','6':
 # LOGGER = daiquiri.getLogger(__name__)
 
 
-def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None,n_dense=None,dropout=None,df=None,model=None):
+def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None,n_dense=None,dropout=None,df=None,model=None,epochs=None):
     # read configuration file
     args = util.parse_arguments(argv)
     config = util.read_config(args.config)
@@ -52,6 +52,7 @@ def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None
     data_opt['n_back'] = data_opt['n_back'] if n_back is None else n_back
     model_opt['Dense_input_dim'] = model_opt['Dense_input_dim'] if n_dense is None else n_dense
     model_opt['Dropout_rate'] = model_opt['Dropout_rate'] if dropout is None else dropout
+    model_opt['epochs'] = model_opt['epochs'] if epochs is None else epochs
 
     # logger_config = {'mailhost': (config["logger"]["mailhost"], config.getint("logger", "port")),
     #                  'fromaddr': config["logger"]["fromaddr"],
@@ -119,7 +120,7 @@ def main(argv=None,t_now=None,plots=False,saveplots=False,units=None,n_back=None
     test_X, test_y= prepare_data_test(test, scaler_X, data_opt)
     #test_y = test_y.reshape((test_y.shape[0], test_y.shape[1], 1))
     if model is None:
-        model = keras.models.load_model(model_opt["model_path"] / Path('model.h5'),
+        model = keras.models.load_model(model_opt["model_path"] / Path('model.keras'),
                                         custom_objects={"attention": attention,
                                                         'Custom_Loss_Prices':Custom_Loss_Prices,
                                                         })

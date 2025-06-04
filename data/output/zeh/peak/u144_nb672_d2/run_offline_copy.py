@@ -29,15 +29,15 @@ ini_path = "/home/mjw/Code/PROPHET-Load_LSTM-mjw/lstm_forecaster.ini"
 
 
 TRAIN =     0
-PRELOAD =   0
-TEST =      0
+PRELOAD =   True
+TEST =      True
 
-HP_SEARCH = True
+HP_SEARCH = 0
 
 TEST_OUTPUT_FILENAME = 'test_forecasts.csv' #'train_test_forecasts.csv'
 #TEST_BEGIN,TEST_END = '2019-9-13 0:00','2019-12-27 23:00' # impianto 4
 TEST_BEGIN,TEST_END = '2019-8-6','2019-12-25' # zeh
-TEST_FREQ = '24h'# '24h' for peaks, else '1h'
+TEST_FREQ = '1h'# '24h' for peaks, else '1h'
 
 HP_CONTINUE_PREVIOUS_SEARCH =   0 # picks up where last search left off
 HP_COPY_PREVIOUS_SPACE =        0 # use existing search space but build new models
@@ -124,8 +124,9 @@ def test_range(df,model):
     
     forecasts = pd.DataFrame()
     for t in pd.date_range(TEST_BEGIN,TEST_END,freq=TEST_FREQ)[:LIMIT]:
+    #for t in pd.date_range('2017-1-8 0:00','2019-12-28 0:00',freq='1h')[:limit]:
         print('test timestamp_update:',t)
-        _, _, _, new_forecast = lstm_forecaster.main([ini_path],t,df=df,model=model,epochs=LIMIT)
+        _, _, _, new_forecast = lstm_forecaster.main([ini_path],t,df=df,model=model)
         new_forecast.index = new_forecast.index.tz_convert(None)
         new_forecast.reset_index(inplace=True)
         new_forecast.rename(columns={'index':'timestamp_forecast'},inplace=True)
@@ -188,7 +189,7 @@ def hyper_parameter_search():
         tic2 = pd.Timestamp.now()
         try:
             # train
-            vloss = lstm_forecaster_training.main([ini_path],units,n_back,dropout,LIMIT)
+            vloss = lstm_forecaster_training.main([ini_path],units,n_back,dropout)
             
             # test
             
@@ -244,7 +245,7 @@ Train
 """
 
 if TRAIN:
-    lstm_forecaster_training.main([ini_path],epochs=LIMIT)
+    lstm_forecaster_training.main([ini_path])
 
 
 """

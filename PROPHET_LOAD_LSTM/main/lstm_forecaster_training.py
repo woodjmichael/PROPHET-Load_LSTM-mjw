@@ -25,7 +25,7 @@ if MICROGRID_PC:
 # Logger definition
 # LOGGER = daiquiri.getLogger(__name__)
 
-def main(argv=None,units=None,n_back=None,dropout=None):
+def main(argv=None,units=None,n_back=None,dropout=None,epochs=None):
     
     # read configuration file
     args = util.parse_arguments(argv)
@@ -42,6 +42,7 @@ def main(argv=None,units=None,n_back=None,dropout=None):
     model_opt['LSTM_num_hidden_units'] = model_opt['LSTM_num_hidden_units'] if units is None else units
     data_opt['n_back'] = data_opt['n_back'] if n_back is None else n_back
     model_opt['Dropout_rate'] = model_opt['Dropout_rate'] if dropout is None else dropout
+    model_opt['epochs'] = model_opt['epochs'] if epochs is None else epochs
     
     df = pd.read_csv(data_opt['data_path'],
                      index_col=0,
@@ -73,7 +74,7 @@ def main(argv=None,units=None,n_back=None,dropout=None):
     dump(scaler_y, open(model_opt["model_path"] / Path("scaler_out.pkl"), 'wb'))
 
     model, history = create_model_attention(model_opt, train_X, train_y)
-    model.save(model_opt['model_path'] / Path("model.h5"))
+    model.save(model_opt['model_path'] / Path("model.keras"))
 
     val_loss = min(history.history['val_loss'])
     

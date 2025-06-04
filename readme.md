@@ -1,8 +1,12 @@
+# *Readme*
+
 # Environment
 
 Pipfile and piplock don't work well off the microgrid PC.
 
 This seems to work:
+
+## GPU
 
 ```bash
 # create python 3.8 env with tensorflow
@@ -18,9 +22,14 @@ python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU')
 pip install pandas daiquiri scikit-learn matplotlib
 ```
 
-Good HP search (1 epoch)
-```
-,units,n_back,n_dense,dropout,vloss,test_mae_pers,test_mae_pred,test_skill,frac_0_mae_pers
+## CPU
 
-11,144,96,36,0.1,0.050905898213386536,0.04557496955470568,0.03828909344982988,0.15986573718124453,0.0
+Tested in linux but need to save model as .keras not .hd5
+
+```bash
+conda create --name lstm python=3.11 -y
+conda activate lstm
+pip install tensorflow pandas daiquiri scikit-learn matplotlib
 ```
+
+Gives some warnings but seems to work
